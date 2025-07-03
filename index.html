@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AuraVoice</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        :root {
+            --primary-bg: #121212;
+            --secondary-bg: #1e1e1e;
+            --accent-colour: #bb86fc;
+            --accent-colour-light: #d6baff;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --record-colour: #ff4d4d;
+        }
+
+        /* --- CSS Reset for Mobile Consistency --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* --- End Reset --- */
+
+        html { height: 100%; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-primary);
+            height: 100%; width: 100%;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%; height: 100%;
+            background-color: var(--secondary-bg);
+            overflow: hidden; position: relative;
+            display: flex; flex-direction: column;
+        }
+
+        .centered-logo {
+            width: 60px; height: 60px;
+            border-radius: 50%; object-fit: cover;
+            border: 2px solid var(--accent-colour);
+            margin-bottom: 15px; flex-shrink: 0;
+        }
+
+        .screen {
+            padding: 20px; box-sizing: border-box;
+            display: none; flex-direction: column;
+            align-items: center;
+            flex-grow: 1;
+            overflow: hidden; /* Parent screen doesn't scroll */
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .screen.active { display: flex; }
+        
+        .results-page {
+            display: none; width: 100%;
+            flex-direction: column; align-items: center;
+            justify-content: center; /* Vertically center content on each small page */
+            flex-grow: 1;
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+        .results-page.active { display: flex; }
+        
+        h1 { font-weight: 900; font-size: clamp(1.8em, 8vw, 2.5em); color: var(--accent-colour); margin-bottom: 10px; }
+        h2 { font-weight: 700; font-size: clamp(1.3em, 6vw, 1.8em); margin-bottom: 15px; }
+        h3 { font-weight: 700; color: var(--accent-colour); padding-top: 15px; margin-top: 15px; font-size: clamp(1.1em, 5vw, 1.3em); }
+        p { color: var(--text-secondary); font-size: clamp(0.9em, 3.5vw, 1em); line-height: 1.6; max-width: 90%; margin-top: 10px; }
+        .free-notice { font-weight: 700; color: var(--text-primary); margin-top: 10px; }
+
+        .button {
+            background: linear-gradient(90deg, #6200ee, var(--accent-colour));
+            color: #fff; font-size: clamp(1em, 4.5vw, 1.1em); font-weight: 700;
+            padding: 15px 30px; border-radius: 50px; border: none;
+            cursor: pointer; margin-top: 20px; flex-shrink: 0;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .button:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(187, 134, 252, 0.6); }
+
+        .nav-button { background: transparent; border: 2px solid var(--accent-colour-light); color: var(--accent-colour-light); padding: 10px 25px; }
+        .nav-container { display: flex; justify-content: space-between; width: 90%; margin-top: auto; padding-top: 20px; flex-shrink: 0; }
+        
+        #credits { font-size: 0.8em; color: #888; margin-top: auto; padding-top: 20px; flex-shrink: 0; }
+        #prompt-box { border: 2px solid var(--accent-colour); border-radius: 15px; padding: 20px; margin: 20px 0; font-style: italic; }
+        #record-button { width: 100px; height: 100px; border-radius: 50%; background-color: var(--record-colour); border: 5px solid #fff; cursor: pointer; margin-top: 20px; box-shadow: 0 0 20px rgba(255, 77, 77, 0.5); }
+        #record-button::before { content: '🎤'; font-size: 3em; line-height: 90px; }
+
+        #analysis-content, #recording-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; flex-grow: 1; }
+        #recording-container { display: none; }
+
+        #wave-visualizer { display: flex; justify-content: center; align-items: center; height: 60px; margin-top: 20px; }
+        .wave-bar {
+            width: 8px; height: 10px; margin: 0 4px;
+            background-color: var(--record-colour); border-radius: 4px;
+            animation: wave-pulse 1.2s infinite ease-in-out;
+        }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave-pulse { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(5); } }
+
+        #reveal-screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--secondary-bg); z-index: 10; }
+        #reveal-name { opacity: 0; transform: scale(0.8); animation: revealName 1.5s forwards ease-out; animation-delay: 0.5s; font-size: clamp(1.5em, 7vw, 2.2em); }
+        @keyframes revealName { to { opacity: 1; transform: scale(1); } }
+        
+        .attribute { width: 90%; margin: 8px 0; text-align: left; font-size: 0.9em; }
+        .attr-name { display: inline-block; width: 110px; }
+        .progress-bar { display: inline-block; width: calc(100% - 140px); background: #333; height: 20px; border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #6200ee, var(--accent-colour)); transition: width 1s ease-in-out 0.3s; }
+
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div id="welcome-screen" class="screen active">
+            <img src="pirate.jpg" alt="Logo" class="centered-logo">
+            <h1>AuraVoice</h1>
+            <p>Η φωνή σου είναι κάτι παραπάνω από ήχος—είναι η μοναδική σου υπογραφή. Ας αναλύσουμε τα φωνητικά σου μοτίβα για να αποκαλύψουμε το βασικό σου αρχέτυπο επικοινωνίας.</p>
+            <p class="free-notice">Αυτή η εφαρμογή είναι 100% δωρεάν.</p>
+            <button id="begin-btn" class="button">Έναρξη Ανάλυσης</button>
+            <div id="credits">Ιδέα-Υλοποίηση: Παναγιώτης Δόμβρος, Καθηγητής Αγγλικών και Δραματικής Τέχνης, Με την επιφύλαξη παντός δικαιώματος</div>
+        </div>
+
+        <div id="analysis-screen" class="screen">
+            <div id="analysis-content">
+                <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                <p>Για να ρυθμιστεί ο αναλυτής, διάβασε την παρακάτω φράση δυνατά:</p>
+                <div id="prompt-box"></div>
+                <p>Πάτησε το κουμπί για εγγραφή.</p>
+                <div id="record-button"></div>
+            </div>
+            <div id="recording-container">
+                <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                <p id="recording-prompt-text" style="font-style: italic; color: var(--accent-colour-light)"></p>
+                <div id="wave-visualizer">
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                </div>
+                <p class="loader-text" style="text-align: center; margin-top: 10px;">Ηχογράφηση σε εξέλιξη...</p>
+            </div>
+        </div>
+        
+        <div id="reveal-screen" class="screen">
+            <img src="pirate.jpg" alt="Logo" class="centered-logo">
+            <p>Ο τύπος της φωνής σου είναι αυτός...</p>
+            <h1 id="reveal-name" class="revealed-name"></h1>
+        </div>
+
+        <div id="results-screen" class="screen">
+            <div id="results-content" style="display: flex; flex-direction: column; align-items: center; flex-grow: 1; width: 100%;">
+                <div id="results-page-1" class="results-page">
+                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                    <h2 id="result-title"></h2>
+                    <p id="core-statement"></p>
+                    <div class="attribute"><span class="attr-name">Ενσυναίσθηση</span><div class="progress-bar"><div id="empathy-bar" class="progress-fill"></div></div></div>
+                    <div class="attribute"><span class="attr-name">Δεξιότητες</span><div class="progress-bar"><div id="skills-bar" class="progress-fill"></div></div></div>
+                    <div class="attribute"><span class="attr-name">Ανεξαρτησία</span><div class="progress-bar"><div id="independence-bar" class="progress-fill"></div></div></div>
+                    <div class="attribute"><span class="attr-name">Σοφία</span><div class="progress-bar"><div id="wisdom-bar" class="progress-fill"></div></div></div>
+                    <div class="attribute"><span class="attr-name">Δημιουργικότητα</span><div class="progress-bar"><div id="creativity-bar" class="progress-fill"></div></div></div>
+                </div>
+                <div id="results-page-2" class="results-page">
+                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                    <h3>Η Υπερδύναμή σου</h3><p id="result-superpower"></p>
+                </div>
+                <div id="results-page-3" class="results-page">
+                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                    <h3>Πώς Συνδέεσαι</h3><p id="result-connect"></p>
+                </div>
+                <div id="results-page-4" class="results-page">
+                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                    <h3>Πιθανά Τυφλά Σημεία</h3><p id="result-blindspot"></p>
+                </div>
+                <div id="results-page-5" class="results-page">
+                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                    <h3>Αρχετυπικά Παραδείγματα</h3><p id="result-examples"></p>
+                </div>
+            </div>
+            <div class="nav-container">
+                <button id="back-btn" class="button nav-button" style="visibility: hidden;">Πίσω</button>
+                <button id="next-btn" class="button nav-button">Επόμενο</button>
+            </div>
+             <button id="restart-btn" class="button" style="display:none;">Ανάλυση Ξανά</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const profiles = [
+                { masc: "Διοικητής", fem: "Διοικητής", masc_gen: "του Διοικητή", fem_gen: "της Διοικητή", statement: "Είσαι ο αποφασιστικός/ή στρατηγός, που μιλάει με μια αυθεντία που απαιτεί προσοχή και εμπνέει δράση.", attributes: { empathy: 11, skills: 7, independence: 42, wisdom: 37, creativity: 3 }, superpower: "Η φωνή σου αποπνέει μια έμφυτη αίσθηση κατεύθυνσης. Όταν μιλάς, οι άνθρωποι σε ακούν επειδή προβάλλεις σιγουριά και ένα ξεκάθαρο όραμα.", connect: "Χτίζεις τον σεβασμό μέσω της ικανότητας και των αποτελεσμάτων. Οι άλλοι εμπιστεύονται την κρίση σου και την ικανότητά σου να τους οδηγείς προς έναν κοινό στόχο.", blindspot: "Η εστίασή σου στην αποστολή μπορεί μερικές φορές να επισκιάσει τους ανθρώπους. Μπορεί να θεωρηθείς απόμακρος/η αν δεν προσπαθήσεις συνειδητά να αναγνωρίσεις τις συναισθηματικές ανάγκες της ομάδας σου.", examples: "Παραδείγματα: Ιούλιος Καίσαρας, Μάργκαρετ Θάτσερ, Ναπολέων Βοναπάρτης, Darth Vader, Tywin Lannister." },
+                { masc: "Ηγέτης", fem: "Ηγέτιδα", masc_gen: "του Ηγέτη", fem_gen: "της Ηγέτιδας", statement: "Είσαι ο/η ενοποιητικός/ή παράγοντας που εμπνέει, ισορροπώντας την εξουσία με την ενσυναίσθηση για να συσπειρώσεις τους ανθρώπους γύρω από έναν κοινό σκοπό.", attributes: { empathy: 27, skills: 1, independence: 42, wisdom: 27, creativity: 3 }, superpower: "Διαθέτεις ένα σπάνιο μείγμα δύναμης και ζεστασιάς. Η φωνή σου μπορεί να εκφράσει ένα ισχυρό όραμα, μεταδίδοντας ταυτόχρονα ότι νοιάζεσαι πραγματικά για τους ανθρώπους που καθοδηγείς.", connect: "Συνδέεσαι δείχνοντας στους ανθρώπους ότι τους βλέπεις και τους εκτιμάς. Ακούς τις ανησυχίες τους και ευθυγραμμίζεις τα προσωπικά κίνητρα με τους στόχους της ομάδας.", blindspot: "Η επιθυμία να είσαι ταυτόχρονα ισχυρός/ή ηγέτης και συμπονετικός/ή φίλος/η μπορεί να είναι εξαντλητική. Μπορεί να δυσκολεύεσαι να πάρεις αντιδημοφιλείς αποφάσεις που ξέρεις ότι θα πληγώσουν.", examples: "Παραδείγματα: Μάρτιν Λούθερ Κινγκ, Βασίλισσα Ελισάβετ Α', Μπαράκ Ομπάμα, Μουφάσα, Jean-Luc Picard." },
+                { masc: "Γόης", fem: "Γόησσα", masc_gen: "του Γόη", fem_gen: "της Γόησσας", statement: "Είσαι ο/η χαρισματικός/ή γόης, που χρησιμοποιεί ένα μαγνητικό μείγμα αυτοπεποίθησης και δημιουργικότητας για να προσελκύσει και να κερδίσει τους ανθρώπους.", attributes: { empathy: 24, skills: 11, independence: 24, wisdom: 18, creativity: 20 }, superpower: "Η φωνή σου έχει μια σαγηνευτική ποιότητα. Ξέρεις ακριβώς τι να πεις για να κάνεις τους άλλους να νιώσουν ξεχωριστοί/ές. Διαπρέπεις στο να χτίζεις άμεσες σχέσεις.", connect: "Συνδέεσαι εστιάζοντας έντονα στον συνομιλητή/τριά σου, χρησιμοποιώντας ενσυναίσθηση και πνεύμα για να δημιουργήσεις έναν ισχυρό, προσωπικό δεσμό.", blindspot: "Η γοητεία σου μπορεί να εκληφθεί ως χειριστική εάν δεν υποστηρίζεται από γνήσια πρόθεση. Οι άνθρωποι μπορεί να αναρωτηθούν αν το ενδιαφέρον σου είναι αυθεντικό.", examples: "Παραδείγματα: Τζάκομο Καζανόβα, Κλεοπάτρα, James Bond, Don Draper, Jessica Rabbit." },
+                { masc: "Αφηγητής", fem: "Αφηγήτρια", masc_gen: "του Αφηγητή", fem_gen: "της Αφηγήτριας", statement: "Είσαι ο/η υφαντής/τρια των αφηγήσεων, που χρησιμοποιεί ζωντανές εικόνες και συναισθηματική απήχηση για να κάνει τις ιδέες αξέχαστες.", attributes: { empathy: 49, skills: 16, independence: 12, wisdom: 4, creativity: 19 }, superpower: "Δεν αναφέρεις απλώς γεγονότα, ζωγραφίζεις εικόνες με τα λόγια σου. Έχεις μια διαισθητική κατανόηση της πλοκής, του χαρακτήρα και του συναισθήματος.", connect: "Συνδέεσαι μέσω της κοινής ανθρώπινης εμπειρίας. Λέγοντας ιστορίες, δημιουργείς ένα κοινό έδαφος όπου οι ακροατές βλέπουν τον εαυτό τους στην αφήγηση.", blindspot: "Μερικές φορές μπορεί να προτιμάς μια καλή ιστορία από τα σκληρά δεδομένα, απλουστεύοντας ενδεχομένως σύνθετα ζητήματα. Βεβαιώσου ότι οι αφηγήσεις σου είναι γειωμένες στην πραγματικότητα.", examples: "Παραδείγματα: Όμηρος, Walt Disney, J.K. Rowling, Stephen King, Ira Glass." },
+                { masc: "Διπλωμάτης", fem: "Διπλωμάτης", masc_gen: "του Διπλωμάτη", fem_gen: "της Διπλωμάτη", statement: "Είσαι ο/η κομψός/ή διαμεσολαβητής/τρια, που διαχειρίζεται τις συγκρούσεις με λεπτότητα, σοφία και μια αξιοσημείωτη αίσθηση ηρεμίας.", attributes: { empathy: 12, skills: 9, independence: 38, wisdom: 32, creativity: 1 }, superpower: "Διαθέτεις μια ηρεμιστική και αντικειμενική παρουσία. Μπορείς να ακούσεις όλες τις πλευρές μιας διαφωνίας χωρίς να εμπλακείς συναισθηματικά.", connect: "Χτίζεις συνδέσεις μέσω της σταθερότητας και της δικαιοσύνης. Οι άνθρωποι σε εμπιστεύονται ως μια ουδέτερη και λογική δύναμη.", blindspot: "Η εστίασή σου στην ουδετερότητα μπορεί να εκληφθεί λανθασμένα ως έλλειψη πάθους. Μερικές φορές, ίσως χρειαστεί να πάρεις μια σταθερή θέση αντί να αναζητάς τη μέση λύση.", examples: "Παραδείγματα: Νέλσον Μαντέλα, Πριγκίπισσα Λέια, Κόφι Ανάν, Atticus Finch." },
+                { masc: "Εκφωνητής", fem: "Εκφωνήτρια", masc_gen: "του Εκφωνητή", fem_gen: "της Εκφωνήτριας", statement: "Είσαι η καθαρή και ελκυστική φωνή του κοινού, με την ικανότητα να κάνεις τις σύνθετες πληροφορίες προσιτές και ενδιαφέρουσες για όλους.", attributes: { empathy: 50, skills: 10, independence: 12, wisdom: 8, creativity: 21 }, superpower: "Έχεις ταλέντο στη σαφήνεια. Μπορείς να πάρεις ένα πυκνό θέμα και να το αναλύσεις σε εύπεπτα, ελκυστικά μέρη για ένα ευρύ κοινό.", connect: "Συνδέεσαι όντας μια αξιόπιστη και προσιτή πηγή πληροφοριών. Το κοινό σου αισθάνεται μια αίσθηση οικειότητας και εμπιστοσύνης μαζί σου.", blindspot: "Στην προσπάθειά σου να απευθυνθείς σε ένα ευρύ κοινό, μερικές φορές μπορεί να απλουστεύσεις υπερβολικά ή να αποφύγεις αμφιλεγόμενες αποχρώσεις.", examples: "Παραδείγματα: Oprah Winfrey, David Attenborough, Walter Cronkite, Anderson Cooper." },
+                { masc: "Μέντορας", fem: "Μέντορας", masc_gen: "του Μέντορα", fem_gen: "της Μέντορα", statement: "Είσαι το σταθερό χέρι και το φως που καθοδηγεί, οδηγώντας με την εμπειρία και την ήρεμη αυτοπεποίθηση για να προωθήσεις την ανάπτυξη των άλλων.", attributes: { empathy: 8, skills: 11, independence: 54, wisdom: 19, creativity: 8 }, superpower: "Η μεγαλύτερη δύναμή σου είναι η τεράστια πείρα σου. Παρέχεις καθοδήγηση σφυρηλατημένη από πραγματικές προκλήσεις και επιτυχίες.", connect: "Δημιουργείς συνδέσεις όντας πηγή σταθερότητας και γνώσης. Οι άνθρωποι έλκονται φυσικά από εσένα για συμβουλές.", blindspot: "Η ισχυρή σου ανεξαρτησία μπορεί μερικές φορές να εκληφθεί ως απόσταση. Να θυμάσαι να μοιράζεσαι και τα δικά σου συναισθήματα, όχι μόνο τα μαθήματά σου.", examples: "Παραδείγματα: Yoda, Gandalf, Albus Dumbledore, Mr. Miyagi, Uncle Iroh." },
+                { masc: "Influencer", fem: "Influencer", masc_gen: "του Influencer", fem_gen: "της Influencer", statement: "Είσαι ο/η μαγνητικός/ή trendsetter, που διοχετεύει δημιουργικότητα και ενσυναίσθηση για να χτίσει μια κοινότητα γύρω από ένα κοινό πάθος.", attributes: { empathy: 40, skills: 2, independence: 7, wisdom: 11, creativity: 40 }, superpower: "Έχεις το δάχτυλο στον παλμό του τι έρχεται. Συνδυάζεις την οξυδέρκεια για τις τάσεις με μια αυθεντική, προσιτή φωνή.", connect: "Συνδέεσαι δημιουργώντας και μοιράζοντας περιεχόμενο που έχει απήχηση σε προσωπικό επίπεδο, κάνοντας τους followers να νιώθουν σαν φίλοι.", blindspot: "Η εστίαση στις τάσεις μπορεί να οδηγήσει σε πίεση για τη διατήρηση μιας συγκεκριμένης εικόνας, κάτι που μπορεί να φανεί μη αυθεντικό με τον καιρό.", examples: "Παραδείγματα: Kim Kardashian, MrBeast, Chiara Ferragni, Addison Rae." },
+                { masc: "Αναλυτής", fem: "Αναλύτρια", masc_gen: "του Αναλυτή", fem_gen: "της Αναλύτριας", statement: "Είσαι ο/η οξυδερκής ντετέκτιβ, που χρησιμοποιεί τη λογική και τη σοφία για να αποκαλύψει τα κρυμμένα μοτίβα και τις αλήθειες που άλλοι χάνουν.", attributes: { empathy: 12, skills: 1, independence: 33, wisdom: 39, creativity: 24 }, superpower: "Το μυαλό σου είναι ένα καλοκουρδισμένο όργανο κριτικής σκέψης. Μπορείς να απορροφήσεις τεράστιες ποσότητες δεδομένων και να διαχωρίσεις το σήμα από τον θόρυβο.", connect: "Συνδέεσαι με τους άλλους μέσω του πνευματικού σεβασμού. Οι άνθρωποι έλκονται από τη σαφήνεια και το βάθος των γνώσεών σου.", blindspot: "Μπορεί να απογοητεύεσαι με όσους βασίζονται στο συναίσθημα αντί για τα δεδομένα. Η επικοινωνία σου μπορεί μερικές φορές να εκληφθεί ως ψυχρή.", examples: "Παραδείγματα: Sherlock Holmes, Spock, Batman, Dr. House, Nate Silver." },
+                { masc: "Οραματιστής", fem: "Οραματίστρια", masc_gen: "του Οραματιστή", fem_gen: "της Οραματίστριας", statement: "Είσαι η λαμπρή σπίθα της καινοτομίας, ζωγραφίζοντας εκπληκτικές εικόνες του μέλλοντος με μια φωνή γεμάτη απεριόριστη δημιουργικότητα.", attributes: { empathy: 22, skills: 2, independence: 5, wisdom: 12, creativity: 59 }, superpower: "Βλέπεις αυτό που θα μπορούσε να υπάρξει. Το μυαλό σου λειτουργεί σε διαφορετικό επίπεδο, συνδέοντας ανόμοιες ιδέες για να δημιουργήσει πρωτοποριακές έννοιες.", connect: "Συνδέεσαι προσκαλώντας τους ανθρώπους στο φανταστικό σου μέλλον, εμπνέοντάς τους να πιστέψουν σε έναν καλύτερο, πιο συναρπαστικό κόσμο.", blindspot: "Οι ιδέες σου μπορεί να είναι τόσο μπροστά από την εποχή τους που οι άνθρωποι δυσκολεύονται να τις κατανοήσουν. Ίσως χρειαστεί να συνεργαστείς με πιο πρακτικούς/ές τύπους.", examples: "Παραδείγματα: Steve Jobs, Λεονάρντο ντα Βίντσι, Elon Musk, Νίκολα Τέσλα, Walt Disney." },
+                { masc: "Παρηγορητής", fem: "Παρηγορήτρια", masc_gen: "του Παρηγορητή", fem_gen: "της Παρηγορήτριας", statement: "Είσαι η ζεστή, καθησυχαστική παρουσία, που δημιουργεί ένα ασφαλές καταφύγιο με μια φωνή καθαρής, άνευ όρων ενσυναίσθησης.", attributes: { empathy: 63, skills: 13, independence: 8, wisdom: 10, creativity: 6 }, superpower: "Η φωνή σου είναι βάλσαμο. Έχεις μια εξαιρετική ικανότητα να ακούς χωρίς κριτική και να κάνεις τους ανθρώπους να νιώθουν ασφαλείς και αποδεκτοί/ές.", connect: "Συνδέεσαι μέσω της γνήσιας σου φροντίδας για την ευημερία των άλλων. Προσφέρεις υποστήριξη ελεύθερα και δημιουργείς βαθιούς, αξιόπιστους δεσμούς.", blindspot: "Η τεράστια ενσυναίσθησή σου μπορεί να οδηγήσει σε συναισθηματική εξουθένωση. Μπορεί επίσης να δυσκολεύεσαι να ασκήσεις κριτική από φόβο μην πληγώσεις κάποιον.", examples: "Παραδείγματα: Fred Rogers, Samwise Gamgee, Baymax, Hagrid." },
+                { masc: "Αρχάριος", fem: "Αρχάρια", masc_gen: "του Αρχάριου", fem_gen: "της Αρχάριας", statement: "Είσαι η πρόθυμη και εξελισσόμενη φωνή, γεμάτη δυνατότητες και μια δημιουργική ενέργεια που μόλις αρχίζει να βρίσκει τη μορφή της.", attributes: { empathy: 8, skills: 23, independence: 9, wisdom: 15, creativity: 45 }, superpower: "Η υπερδύναμή σου είναι οι δυνατότητές σου. Προσεγγίζεις τον κόσμο με φρέσκια ματιά και έναν μεταδοτικό ενθουσιασμό για μάθηση.", connect: "Συνδέεσαι μέσω του ενθουσιασμού και της περιέργειάς σου. Οι άνθρωποι έλκονται από τη θετική σου ενέργεια και την προθυμία σου να κάνεις ερωτήσεις.", blindspot: "Η έλλειψη πείρας σου σημαίνει ότι οι ιδέες σου μπορεί να είναι μερικές φορές μη πρακτικές. Είναι ζωτικής σημασίας να αναζητήσεις μέντορες.", examples: "Παραδείγματα: Luke Skywalker (A New Hope), Spider-Man (πρώτες μέρες), Harry Potter (Έτος 1)." }
+            ];
+            const prompts = ["Η δημιουργικότητα είναι η νοημοσύνη που διασκεδάζει.", "Το σοφότερο μυαλό έχει πάντα κάτι να μάθει.", "Πες την αλήθεια, ακόμα κι αν η φωνή σου τρέμει."];
+            
+            const screens = { welcome: document.getElementById('welcome-screen'), analysis: document.getElementById('analysis-screen'), reveal: document.getElementById('reveal-screen'), results: document.getElementById('results-screen') };
+            const elements = {
+                beginBtn: document.getElementById('begin-btn'), recordBtn: document.getElementById('record-button'), restartBtn: document.getElementById('restart-btn'),
+                promptBox: document.getElementById('prompt-box'), analysisContent: document.getElementById('analysis-content'),
+                recordingContainer: document.getElementById('recording-container'), recordingPromptText: document.getElementById('recording-prompt-text'),
+                nextBtn: document.getElementById('next-btn'), backBtn: document.getElementById('back-btn')
+            };
+
+            let currentProfile, currentResultPage;
+
+            function switchScreen(screenToShow) {
+                for (const screen in screens) { screens[screen].classList.remove('active'); }
+                screens[screenToShow].classList.add('active');
+            }
+
+            elements.beginBtn.addEventListener('click', () => {
+                const promptText = prompts[Math.floor(Math.random() * prompts.length)];
+                elements.promptBox.innerText = promptText;
+                elements.recordingPromptText.innerText = `"${promptText}"`;
+                elements.analysisContent.style.display = 'flex';
+                elements.recordingContainer.style.display = 'none';
+                switchScreen('analysis');
+            });
+
+            elements.recordBtn.addEventListener('click', () => {
+                elements.analysisContent.style.display = 'none';
+                elements.recordingContainer.style.display = 'flex';
+                setTimeout(startReveal, 5000);
+            });
+
+            function startReveal() {
+                currentProfile = profiles[Math.floor(Math.random() * profiles.length)];
+                document.getElementById('reveal-name').innerText = `${currentProfile.masc_gen} / ${currentProfile.fem_gen}`;
+                switchScreen('reveal');
+                setTimeout(showFullResults, 2500);
+            }
+            
+            function showFullResults() {
+                document.getElementById('result-title').innerText = `Είσαι ο ${currentProfile.masc} / η ${currentProfile.fem}`;
+                document.getElementById('core-statement').innerText = currentProfile.statement;
+                for (const attr in currentProfile.attributes) {
+                    document.getElementById(`${attr}-bar`).style.width = currentProfile.attributes[attr] + '%';
+                }
+                document.getElementById('result-superpower').innerText = currentProfile.superpower;
+                document.getElementById('result-connect').innerText = currentProfile.connect;
+                document.getElementById('result-blindspot').innerText = currentProfile.blindspot;
+                document.getElementById('result-examples').innerText = currentProfile.examples;
+                
+                currentResultPage = 1;
+                updateResultPage();
+                switchScreen('results');
+            }
+
+            function updateResultPage() {
+                const totalPages = 5;
+                for (let i = 1; i <= totalPages; i++) {
+                    document.getElementById(`results-page-${i}`).classList.remove('active');
+                }
+                document.getElementById(`results-page-${currentResultPage}`).classList.add('active');
+                
+                elements.backBtn.style.visibility = (currentResultPage === 1) ? 'hidden' : 'visible';
+                elements.nextBtn.style.visibility = (currentResultPage === totalPages) ? 'hidden' : 'visible';
+                
+                const finalButtonsVisible = currentResultPage === totalPages;
+                elements.restartBtn.style.display = finalButtonsVisible ? 'block' : 'none';
+                elements.nextBtn.style.display = finalButtonsVisible ? 'none' : 'block';
+            }
+
+            elements.nextBtn.addEventListener('click', () => {
+                if (currentResultPage < 5) { currentResultPage++; updateResultPage(); }
+            });
+
+            elements.backBtn.addEventListener('click', () => {
+                if (currentResultPage > 1) { currentResultPage--; updateResultPage(); }
+            });
+            
+            elements.restartBtn.addEventListener('click', () => switchScreen('welcome'));
+        });
+    </script>
+</body>
+</html>
