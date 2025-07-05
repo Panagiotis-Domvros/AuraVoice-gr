@@ -60,9 +60,9 @@
         #reveal-name { opacity: 0; transform: scale(0.8); animation: revealName 1.5s forwards ease-out; animation-delay: 0.5s; font-size: clamp(1.5em, 7vw, 2.2em); }
         @keyframes revealName { to { opacity: 1; transform: scale(1); } }
         
-        .attribute { width: 90%; max-width: 400px; margin: 5px 0; text-align: left; font-size: 0.8em; }
-        .attr-name { display: inline-block; width: 90px; }
-        .progress-bar { display: inline-block; width: calc(100% - 110px); background: #333; height: 16px; border-radius: 8px; overflow: hidden; }
+        .attribute { width: 90%; max-width: 400px; margin: 5px 0; text-align: left; font-size: 0.85em; }
+        .attr-name { display: inline-block; width: 100px; }
+        .progress-bar { display: inline-block; width: calc(100% - 120px); background: #333; height: 16px; border-radius: 8px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #6200ee, var(--accent-colour)); transition: width 1s ease-in-out 0.3s; }
     </style>
 </head>
@@ -108,7 +108,7 @@
                     <h2 id="result-title"></h2>
                     <p id="core-statement"></p>
                 </div>
-                 <div id="results-page-2" class="results-page">
+                <div id="results-page-2" class="results-page">
                     <img src="pirate.jpg" alt="Logo" class="centered-logo">
                      <h3>Ανάλυση Χαρακτηριστικών</h3>
                     <div class="attribute"><span class="attr-name">Ενσυναίσθηση</span><div class="progress-bar"><div id="empathy-bar" class="progress-fill"></div></div></div>
@@ -118,19 +118,19 @@
                     <div class="attribute"><span class="attr-name">Δημιουργικότητα</span><div class="progress-bar"><div id="creativity-bar" class="progress-fill"></div></div></div>
                 </div>
                 <div id="results-page-3" class="results-page">
-                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                     <img src="pirate.jpg" alt="Logo" class="centered-logo">
                     <h3>Η Υπερδύναμή σου</h3><p id="result-superpower"></p>
                 </div>
                 <div id="results-page-4" class="results-page">
-                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                     <img src="pirate.jpg" alt="Logo" class="centered-logo">
                     <h3>Πώς Συνδέεσαι</h3><p id="result-connect"></p>
                 </div>
                 <div id="results-page-5" class="results-page">
-                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                     <img src="pirate.jpg" alt="Logo" class="centered-logo">
                     <h3>Πιθανά Τυφλά Σημεία</h3><p id="result-blindspot"></p>
                 </div>
                 <div id="results-page-6" class="results-page">
-                    <img src="pirate.jpg" alt="Logo" class="centered-logo">
+                     <img src="pirate.jpg" alt="Logo" class="centered-logo">
                     <h3>Αρχετυπικά Παραδείγματα</h3><p id="result-examples"></p>
                 </div>
             </div>
@@ -215,7 +215,7 @@
             }
 
             function updateResultPage() {
-                const totalPages = 6; // UPDATED to 6 pages
+                const totalPages = 6;
                 for (let i = 1; i <= totalPages; i++) {
                     document.getElementById(`results-page-${i}`).classList.remove('active');
                 }
@@ -224,9 +224,11 @@
                 elements.navContainer.classList.remove('nav-centered');
                 elements.backBtn.style.display = (currentResultPage === 1) ? 'none' : 'block';
                 elements.nextBtn.style.display = (currentResultPage === totalPages) ? 'none' : 'block';
+                elements.restartBtn.style.display = 'none';
                 
                 if (currentResultPage === totalPages) {
                     elements.navContainer.classList.add('nav-centered');
+                    elements.restartBtn.style.display = 'block';
                 }
             }
 
